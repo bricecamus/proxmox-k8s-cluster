@@ -1,0 +1,116 @@
+---
+- hosts: masters:workers
+  become: yes
+  gather_facts: no
+  tasks:
+
+    - name: Wait for hosts to be available
+      wait_for_connection:
+        delay: 5
+        timeout: 600
+    
+    - name: Gather facts for first time
+      setup:
+
+    - name: Wait for /var/lib/dpkg/lock-frontend to be released 
+      shell: while lsof /var/lib/dpkg/lock-frontend ; do sleep 10; done;
+
+    - name: "Kubadm requirements"
+      apt:
+        name: ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common']
+        update_cache: true
+        state: present 
+
+    - name: "Kubernetes deb"
+      shell: | 
+        curl -fsSLo /etc/apt/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+
+    - name: "Kubeadm, kubelet, kubectl installation"
+      shell: |        
+        apt-get update
+        apt-get install -y kubeadm kubelet kubectl
+        apt-mark hold kubeadm kubelet kubectl
+
+    - name: Disable swap as mentionned in official documentation
+      shell: swapoff -a
+        
+    - name: Make the swapoff permanent in fstab
+      replace:
+        path: /etc/fstab
+        regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
+        replace: '# \1'
+
+    - name: Install Docker apt key
+      apt_key:
+        url: https://download.docker.com/linux/debian/gpg 
+        state: present
+
+    - name: Add containerd repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/debian bullseye stable"
+        state: present
+        update_cache: true
+
+    - name: Install containerd
+      apt: 
+        name: containerd.io
+        update_cache: true
+        state: present 
+
+    - name: Replace config by default config
+      shell: sudo containerd config default > /etc/containerd/config.toml
+
+    - name: "Edit config.toml"
+      replace:
+        path: /etc/containerd/config.toml
+        regexp: '(^            SystemdCgroup = false)$'
+        replace: '            SystemdCgroup = true'
+
+    - name: Restart containerd 
+      shell: sudo service containerd restart
+
+    - name: Networking prerequisites
+      shell: |
+        modprobe br_netfilter
+        echo br_netfilter | sudo tee /etc/modules-load.d/kubernetes.conf
+    
+    - name: Edit sysctl.conf to allow packet forwarding
+      replace:
+        path: /etc/sysctl.conf
+        regexp: '(^#net.ipv4.ip_forward=1)$'
+        replace: 'net.ipv4.ip_forward=1'
+
+    - name: "Restart sysctl service"
+      shell: sysctl -p
+  
+- hosts: masters
+  become: yes
+  tasks:
+
+    - name: Cluster creation with kubadm init
+      shell: kubeadm init --pod-network-cidr=10.244.0.0/16
+
+    - name: Set up the flannel networking pod
+      shell: kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml --kubeconfig /etc/kubernetes/admin.conf
+
+    - name: Create token to join cluster
+      shell: kubeadm token create --print-join-command
+      register: join_command_raw
+
+    - name: Set join command as fact
+      set_fact:
+        join_command: "{{ join_command_raw.stdout_lines[0] }}"
+
+- hosts: workers
+  become: yes
+  tasks:
+
+    - name: Wait for master's port 6443
+      wait_for: "host={{ hostvars['kubmaster']['ansible_default_ipv4']['address'] }} port=6443 timeout=1"
+
+    - name: Join the cluster. Use log to prevent joining twice
+      shell: "{{ hostvars['kubmaster'].join_command }} >> node_join.log"
+      args:
+        chdir: $HOME
+        creates: node

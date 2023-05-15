@@ -1,0 +1,27 @@
+#cloud-config
+autoinstall:
+  version: 1
+  identity:
+    hostname: ""
+    password: ""
+    username: ""
+  ssh:
+    install-server: true
+    authorized-keys: [""]
+    allow-pw: false
+    disable_root: true
+    ssh_quiet_keygen: true
+    allow_public_ssh_keys: true
+  packages:
+    - qemu-guest-agent
+    - sudo
+  user-data:
+    package_upgrade: false
+    timezone: America/Montreal
+    users:
+      - name: ""
+        groups: [adm, sudo]
+        lock-passwd: false
+        sudo: ALL=(ALL) NOPASSWD:ALL
+        shell: /bin/bash
+        passwd: ""
