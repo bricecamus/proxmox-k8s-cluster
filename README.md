@@ -1,2 +1,2 @@
 # proxmox-k8s-cluster
-Generate a Ubuntu 22.04 cloud-init ready template with Packer, infrastructure deployment with Terraform and Kubernetes configuration with Ansible.
+Generate an ubuntu server cloud-init ready template with Packer, infrastructure deployment with Terraform and Kubernetes cluster configuration with Ansible. 
