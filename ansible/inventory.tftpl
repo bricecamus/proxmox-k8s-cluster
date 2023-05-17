@@ -1,0 +1,7 @@
+[masters]
+ansible_ssh_host=${master_ip}
+
+[workers]
+%{ for ip in worker_ip ~}
+ansible_ssh_host=${ip}
+%{ endfor ~}

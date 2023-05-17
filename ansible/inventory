@@ -1,5 +1,0 @@
-[masters]
-kubmaster ansible_ssh_host=
-
-[workers]
-kubnode-01 ansible_ssh_host=

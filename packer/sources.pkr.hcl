@@ -54,6 +54,7 @@ source "proxmox-iso" "ubuntu-server-focal" {
         firewall = "false"
     } 
     
+    # You must have an ip address assigned by a dhcp server in order to use autoinstall
     boot_command = [
         "c<wait>",
         "linux /casper/vmlinuz --- autoinstall ds=\"nocloud-net;seedfrom=http://{{.HTTPIP}}:{{.HTTPPort}}/\"",
