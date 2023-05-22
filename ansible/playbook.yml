@@ -18,13 +18,13 @@
     - name: "Kubadm requirements"
       apt:
         name: ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common']
-        update_cache: true
+        #update_cache: true
         state: present 
 
     - name: "Kubernetes deb"
       shell: | 
-        curl -fsSLo /etc/apt/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-        echo "deb [signed-by=/etc/apt/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | tee /etc/apt/sources.list.d/kubernetes.list
+        sudo apt-add-repository "deb http://apt.kubernetes.io/ kubernetes-xenial main" -y
+        curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
 
     - name: "Kubeadm, kubelet, kubectl installation"
       shell: |        
@@ -107,10 +107,10 @@
   tasks:
 
     - name: Wait for master's port 6443
-      wait_for: "host={{ hostvars['kubmaster']['ansible_default_ipv4']['address'] }} port=6443 timeout=1"
+      wait_for: "host={{ hostvars['k8s-master-01']['ansible_default_ipv4']['address'] }} port=6443 timeout=1"
 
     - name: Join the cluster. Use log to prevent joining twice
-      shell: "{{ hostvars['kubmaster'].join_command }} >> node_join.log"
+      shell: "{{ hostvars['k8s-master-01'].join_command }} >> node_join.log"
       args:
         chdir: $HOME
         creates: node
