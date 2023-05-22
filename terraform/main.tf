@@ -12,7 +12,7 @@ resource "proxmox_vm_qemu" "k8s-master" {
     ci_wait                   = 0
     ciuser                    = var.username
     cipassword                = var.username
-    ipconfig0                 = "ip=192.168.1.70/24,gw=${var.ansible_host_gw}"
+    ipconfig0                 = "ip=192.168.1.60/24,gw=${var.subnet_gw}"
     sshkeys                   = file(var.public_key_path)
 
     network {
@@ -26,6 +26,7 @@ resource "proxmox_vm_qemu" "k8s-master" {
         type      = "virtio"
         storage   = var.storage_pool_name
         size      = "20G"
+        iothread  = 0
     }
 }
 
@@ -44,7 +45,7 @@ resource "proxmox_vm_qemu" "k8s-workers" {
     ci_wait                   = 0
     ciuser                    = var.username
     cipassword                = var.username
-    ipconfig0                 = "ip=192.168.1.${count.index+10}/24,gw=${var.ansible_host_gw}"
+    ipconfig0                 = "ip=192.168.1.${count.index+10}/24,gw=${var.subnet_gw}"
     sshkeys                   = file(var.public_key_path)
 
     network {
@@ -58,6 +59,7 @@ resource "proxmox_vm_qemu" "k8s-workers" {
         type      = "virtio"
         storage   = var.storage_pool_name
         size      = "20G"
+        iothread  = 0 
     }
 
     depends_on = [ proxmox_vm_qemu.k8s-master ]
@@ -88,7 +90,7 @@ resource "proxmox_vm_qemu" "ansible-master" {
     memory                    = 2048
     ciuser                    = var.username
     cipassword                = var.username
-    ipconfig0                 = "ip=${var.ansible_host_ip},gw=${var.ansible_host_gw}"
+    ipconfig0                 = "ip=${var.ansible_host_ip},gw=${var.subnet_gw}"
     sshkeys                   = file(var.public_key_path)
 
     network {
@@ -102,12 +104,12 @@ resource "proxmox_vm_qemu" "ansible-master" {
         type      = "virtio"
         storage   = var.storage_pool_name
         size      = "20G"
+        iothread  = 0 
     }
 
     connection {
         type        = "ssh"
-        port        = 102
-        host        = var.proxmox_host_ip
+        host        = var.ansible_host_ip
         user        = var.username
         password    = var.username
         private_key = file(var.private_key_path)    
@@ -115,21 +117,26 @@ resource "proxmox_vm_qemu" "ansible-master" {
 
     provisioner "file" {
         source      = var.private_key_path
-        destination = "/home/${var.username}/.ssh/id_rsa"
+        destination = "/home/ghoxt/.ssh/id_rsa"
     }
 
     provisioner "file" {
         source      = "../ansible"
-        destination = "/home/${var.username}"
+        destination = "/home/ghoxt"
     }
 
     provisioner "remote-exec" {
         inline = [
-            "sudo chmod 0600 /home/${var.username}/.ssh/id_rsa",
+            "sudo chmod 0600 /home/ghoxt/.ssh/id_rsa",
             "sudo apt-add-repository ppa:ansible/ansible -y",
             "sudo apt update",
-            "nohup sudo apt install ansible -y"
+            "nohup sudo apt install ansible -y",
+            "sudo mkdir /etc/ansible",
+            "sudo cp /home/ghoxt/ansible/ansible.cfg /etc/ansible",
+            "ansible-playbook /home/ghoxt/ansible/playbook.yml -i /home/ghoxt/ansible/inventory"
         ]
+
+        on_failure = continue
     }
 
     depends_on = [ local_file.ansible_inventory ]

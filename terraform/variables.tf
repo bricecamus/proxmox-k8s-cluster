@@ -18,11 +18,6 @@ variable "ansible_host_ip" {
   description = "IP address of your Ansible VM (IPv4/CIDR format ex: 192.168.0.70/24)"
 }
 
-variable "ansible_host_gw" {
-  type        = string
-  description = "IP address of your Ansible VM gateway (ex: 192.168.0.1)"
-}
-
 variable "proxmox_host_ip" {
   type        = string
   description = "IP address of your Proxmox host (ex: 192.168.0.10)"
@@ -31,4 +26,9 @@ variable "proxmox_host_ip" {
 variable "storage_pool_name" {
   type        = string
   description = "Name of the storage pool you want to use to store the VM disk"
+}
+
+variable "subnet_gw" {
+  type        = string
+  description = "IP address of your subnet gateway (ex: 192.168.0.1)"
 }
