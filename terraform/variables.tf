@@ -15,12 +15,17 @@ variable "public_key_path" {
 
 variable "ansible_host_ip" {
   type        = string
-  description = "IP address of your Ansible VM (IPv4/CIDR format ex: 192.168.0.70/24)"
+  description = "IP address of your Ansible VM (ex: 192.168.0.70)"
 }
 
 variable "proxmox_host_ip" {
   type        = string
   description = "IP address of your Proxmox host (ex: 192.168.0.10)"
+}
+
+variable "k8s_master_ip" {
+  type        = string
+  description = "IP address you want for your kubernetes master (ex: 192.168.0.60)"
 }
 
 variable "storage_pool_name" {
@@ -31,4 +36,9 @@ variable "storage_pool_name" {
 variable "subnet_gw" {
   type        = string
   description = "IP address of your subnet gateway (ex: 192.168.0.1)"
+}
+
+variable "subnet_mask" {
+  type        = string
+  description = "Subnet mask you want to use in CIDR format (ex: /24)"
 }

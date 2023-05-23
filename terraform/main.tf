@@ -12,7 +12,7 @@ resource "proxmox_vm_qemu" "k8s-master" {
     ci_wait                   = 0
     ciuser                    = var.username
     cipassword                = var.username
-    ipconfig0                 = "ip=192.168.1.60/24,gw=${var.subnet_gw}"
+    ipconfig0                 = "ip=${var.k8s_master_ip}${var.subnet_mask},gw=${var.subnet_gw}"
     sshkeys                   = file(var.public_key_path)
 
     network {
@@ -45,7 +45,7 @@ resource "proxmox_vm_qemu" "k8s-workers" {
     ci_wait                   = 0
     ciuser                    = var.username
     cipassword                = var.username
-    ipconfig0                 = "ip=192.168.1.${count.index+10}/24,gw=${var.subnet_gw}"
+    ipconfig0                 = "ip=192.168.1.${count.index+10}${var.subnet_mask},gw=${var.subnet_gw}"
     sshkeys                   = file(var.public_key_path)
 
     network {
@@ -77,6 +77,17 @@ resource "local_file" "ansible_inventory" {
     depends_on = [ proxmox_vm_qemu.k8s-workers]
 }
 
+resource "local_file" "ansible_config" {
+    content = templatefile("../ansible/ansible.cfg.tftpl",
+        {
+            username = var.username
+        }
+    )
+    filename = "../ansible/ansible.cfg"
+
+    depends_on = [ proxmox_vm_qemu.k8s-workers]
+}
+
 resource "proxmox_vm_qemu" "ansible-master" {
     name                      = "ansible-master"
     boot                      = "order=virtio0"
@@ -90,7 +101,7 @@ resource "proxmox_vm_qemu" "ansible-master" {
     memory                    = 2048
     ciuser                    = var.username
     cipassword                = var.username
-    ipconfig0                 = "ip=${var.ansible_host_ip},gw=${var.subnet_gw}"
+    ipconfig0                 = "ip=${var.ansible_host_ip}${var.subnet_mask},gw=${var.subnet_gw}"
     sshkeys                   = file(var.public_key_path)
 
     network {
@@ -117,27 +128,27 @@ resource "proxmox_vm_qemu" "ansible-master" {
 
     provisioner "file" {
         source      = var.private_key_path
-        destination = "/home/ghoxt/.ssh/id_rsa"
+        destination = "/home/${var.username}/.ssh/id_rsa"
     }
 
     provisioner "file" {
         source      = "../ansible"
-        destination = "/home/ghoxt"
+        destination = "/home/${var.username}"
     }
 
     provisioner "remote-exec" {
         inline = [
-            "sudo chmod 0600 /home/ghoxt/.ssh/id_rsa",
+            "sudo chmod 0600 /home/${var.username}/.ssh/id_rsa",
             "sudo apt-add-repository ppa:ansible/ansible -y",
             "sudo apt update",
             "nohup sudo apt install ansible -y",
             "sudo mkdir /etc/ansible",
-            "sudo cp /home/ghoxt/ansible/ansible.cfg /etc/ansible",
-            "ansible-playbook /home/ghoxt/ansible/playbook.yml -i /home/ghoxt/ansible/inventory"
+            "sudo cp /home/${var.username}/ansible/ansible.cfg /etc/ansible",
+            "ansible-playbook /home/${var.username}/ansible/playbook.yml -i /home/${var.username}/ansible/inventory"
         ]
 
         on_failure = continue
     }
 
-    depends_on = [ local_file.ansible_inventory ]
+    depends_on = [ local_file.ansible_inventory, local_file.ansible_config ]
 }
