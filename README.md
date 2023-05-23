@@ -3,7 +3,7 @@
 Generate an ubuntu server cloud-init ready template with Packer, infrastructure deployment with Terraform and Kubernetes cluster configuration with Ansible. 
 
 
-![](https://i.imgur.com/BOMDCMB.png)
+<img src="https://i.imgur.com/BOMDCMB.png" width="70%" height="70%">
 
 ## Usage example
 
