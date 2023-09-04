@@ -1,5 +1,5 @@
 [masters]
-k8s-master-01 ansible_ssh_host=${master_ip}
+c1-cp1 ansible_ssh_host=${master_ip}
 
 [workers]
 %{ for ip in worker_ip ~}

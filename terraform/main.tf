@@ -1,5 +1,5 @@
-resource "proxmox_vm_qemu" "k8s-master" {
-    name                      = "k8s-master-01"
+resource "proxmox_vm_qemu" "c1-cp1" {
+    name                      = "c1-cp1"
     boot                      = "order=virtio0"
     clone                     = "template-ubuntu-22.04"
     target_node               = "proxmox"
@@ -8,7 +8,7 @@ resource "proxmox_vm_qemu" "k8s-master" {
     agent                     = 1
     sockets                   = 1
     cores                     = 2
-    memory                    = 2048
+    memory                    = 3072
     ci_wait                   = 0
     ciuser                    = var.username
     cipassword                = var.username
@@ -25,14 +25,14 @@ resource "proxmox_vm_qemu" "k8s-master" {
     disk {
         type      = "virtio"
         storage   = var.storage_pool_name
-        size      = "20G"
+        size      = "100G"
         iothread  = 0
     }
 }
 
-resource "proxmox_vm_qemu" "k8s-workers" {
+resource "proxmox_vm_qemu" "c1-workers" {
     count                     = 2
-    name                      = "k8s-worker-0${count.index+1}"
+    name                      = "c1-node${count.index+1}"
     boot                      = "order=virtio0"
     clone                     = "template-ubuntu-22.04"
     target_node               = "proxmox"
@@ -41,7 +41,7 @@ resource "proxmox_vm_qemu" "k8s-workers" {
     agent                     = 1
     sockets                   = 1
     cores                     = 2
-    memory                    = 2048
+    memory                    = 3072
     ci_wait                   = 0
     ciuser                    = var.username
     cipassword                = var.username
@@ -58,23 +58,23 @@ resource "proxmox_vm_qemu" "k8s-workers" {
     disk {
         type      = "virtio"
         storage   = var.storage_pool_name
-        size      = "20G"
+        size      = "100G"
         iothread  = 0 
     }
 
-    depends_on = [ proxmox_vm_qemu.k8s-master ]
+    depends_on = [ proxmox_vm_qemu.c1-cp1 ]
 }
 
 resource "local_file" "ansible_inventory" {
     content = templatefile("../ansible/inventory.tftpl",
         {
-            master_ip = proxmox_vm_qemu.k8s-master.default_ipv4_address
-            worker_ip = proxmox_vm_qemu.k8s-workers[*].default_ipv4_address
+            master_ip = proxmox_vm_qemu.c1-cp1.default_ipv4_address
+            worker_ip = proxmox_vm_qemu.c1-workers[*].default_ipv4_address
         }
     )
-    filename = "../ansible/inventory"
 
-    depends_on = [ proxmox_vm_qemu.k8s-workers]
+    filename = "../ansible/inventory"
+    depends_on = [ proxmox_vm_qemu.c1-workers, proxmox_vm_qemu.c1-cp1 ]
 }
 
 resource "local_file" "ansible_config" {
@@ -83,13 +83,14 @@ resource "local_file" "ansible_config" {
             username = var.username
         }
     )
-    filename = "../ansible/ansible.cfg"
 
-    depends_on = [ proxmox_vm_qemu.k8s-workers]
+    filename = "../ansible/ansible.cfg"
+    depends_on = [ proxmox_vm_qemu.c1-workers, proxmox_vm_qemu.c1-cp1 ]
 }
 
-resource "proxmox_vm_qemu" "ansible-master" {
-    name                      = "ansible-master"
+
+resource "proxmox_vm_qemu" "c1-ansible" {
+    name                      = "c1-ansible"
     boot                      = "order=virtio0"
     clone                     = "template-ubuntu-22.04"
     target_node               = "proxmox"
@@ -98,7 +99,8 @@ resource "proxmox_vm_qemu" "ansible-master" {
     agent                     = 1
     sockets                   = 1
     cores                     = 2
-    memory                    = 2048
+    memory                    = 3072
+    ci_wait                   = 0
     ciuser                    = var.username
     cipassword                = var.username
     ipconfig0                 = "ip=${var.ansible_host_ip}${var.subnet_mask},gw=${var.subnet_gw}"
@@ -114,8 +116,8 @@ resource "proxmox_vm_qemu" "ansible-master" {
     disk {
         type      = "virtio"
         storage   = var.storage_pool_name
-        size      = "20G"
-        iothread  = 0 
+        size      = "100G"
+        iothread  = 0
     }
 
     connection {
@@ -126,14 +128,12 @@ resource "proxmox_vm_qemu" "ansible-master" {
         private_key = file(var.private_key_path)    
     }
 
-    provisioner "file" {
-        source      = var.private_key_path
-        destination = "/home/${var.username}/.ssh/id_rsa"
+    provisioner "local-exec" {
+        command = "scp -qo StrictHostKeyChecking=no -i ${var.private_key_path} ${var.private_key_path} ${var.username}@${var.ansible_host_ip}:/home/${var.username}/.ssh"
     }
 
-    provisioner "file" {
-        source      = "../ansible"
-        destination = "/home/${var.username}"
+    provisioner "local-exec" {
+        command = "scp -qo StrictHostKeyChecking=no -i ${var.private_key_path} -r ../ansible ${var.username}@${var.ansible_host_ip}:/home/${var.username}"
     }
 
     provisioner "remote-exec" {
@@ -144,11 +144,10 @@ resource "proxmox_vm_qemu" "ansible-master" {
             "nohup sudo apt install ansible -y",
             "sudo mkdir /etc/ansible",
             "sudo cp /home/${var.username}/ansible/ansible.cfg /etc/ansible",
-            "ansible-playbook /home/${var.username}/ansible/playbook.yml -i /home/${var.username}/ansible/inventory"
+            "ansible-playbook /home/${var.username}/ansible/playbook.yml -i /home/${var.username}/ansible/inventory",
         ]
-
         on_failure = continue
     }
 
-    depends_on = [ local_file.ansible_inventory, local_file.ansible_config ]
+    depends_on = [ local_file.ansible_config, local_file.ansible_inventory ]
 }

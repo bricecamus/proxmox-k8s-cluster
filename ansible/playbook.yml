@@ -15,6 +15,22 @@
     - name: Wait for /var/lib/dpkg/lock-frontend to be released 
       shell: while lsof /var/lib/dpkg/lock-frontend ; do sleep 10; done;
 
+    - name: Update APT Cache
+      apt:
+        update_cache: yes
+        force_apt_get: yes
+
+    - name: Remove apt lock file
+      file:
+        state: absent
+        path: "/var/lib/dpkg/lock"
+
+    - name: Upgrade all packages to the latest version
+      apt:
+        name: "*"
+        state: latest
+        force_apt_get: yes
+
     - name: "Kubadm requirements"
       apt:
         name: ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common']
@@ -107,10 +123,10 @@
   tasks:
 
     - name: Wait for master's port 6443
-      wait_for: "host={{ hostvars['k8s-master-01']['ansible_default_ipv4']['address'] }} port=6443 timeout=1"
+      wait_for: "host={{ hostvars['c1-cp1']['ansible_default_ipv4']['address'] }} port=6443 timeout=1"
 
     - name: Join the cluster. Use log to prevent joining twice
-      shell: "{{ hostvars['k8s-master-01'].join_command }} >> node_join.log"
+      shell: "{{ hostvars['c1-cp1'].join_command }} >> node_join.log"
       args:
         chdir: $HOME
         creates: node
