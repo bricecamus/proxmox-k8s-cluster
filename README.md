@@ -24,6 +24,4 @@ terraform apply \
 -var storage_pool_name="local" \
 -var k8s_master_ip="192.168.1.60" \
 -var subnet_mask="/24" \
--parallelism=1
 ```
-I use parallelism with value 1 to avoid the lock of the template file that happens irregularly.
