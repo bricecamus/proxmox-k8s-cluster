@@ -42,3 +42,8 @@ variable "subnet_mask" {
   type        = string
   description = "Subnet mask you want to use in CIDR format (ex: /24)"
 }
+
+variable "pve_node_name" {
+  type        = string
+  description = "Name of your PVE node name (ex: proxmox)"
+}

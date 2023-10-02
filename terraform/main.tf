@@ -2,7 +2,7 @@ resource "proxmox_vm_qemu" "c1-cp1" {
     name                      = "c1-cp1"
     boot                      = "order=virtio0"
     clone                     = "template-ubuntu-22.04"
-    target_node               = "proxmox"
+    target_node               = var.pve_node_name
     scsihw                    = "virtio-scsi-pci"
     cpu                       = "host"
     agent                     = 1
@@ -35,7 +35,7 @@ resource "proxmox_vm_qemu" "c1-workers" {
     name                      = "c1-node${count.index+1}"
     boot                      = "order=virtio0"
     clone                     = "template-ubuntu-22.04"
-    target_node               = "proxmox"
+    target_node               = var.pve_node_name
     scsihw                    = "virtio-scsi-pci"
     cpu                       = "host"
     agent                     = 1
@@ -93,7 +93,7 @@ resource "proxmox_vm_qemu" "c1-ansible" {
     name                      = "c1-ansible"
     boot                      = "order=virtio0"
     clone                     = "template-ubuntu-22.04"
-    target_node               = "proxmox"
+    target_node               = var.pve_node_name
     scsihw                    = "virtio-scsi-pci"
     cpu                       = "host"
     agent                     = 1
@@ -129,7 +129,7 @@ resource "proxmox_vm_qemu" "c1-ansible" {
     }
 
     provisioner "local-exec" {
-        command = "scp -qo StrictHostKeyChecking=no -i ${var.private_key_path} ${var.private_key_path} ${var.username}@${var.ansible_host_ip}:/home/${var.username}/.ssh"
+        command = "scp -qo StrictHostKeyChecking=no -i ${var.private_key_path} ${var.username}@${var.ansible_host_ip}:/home/${var.username}/.ssh"
     }
 
     provisioner "local-exec" {

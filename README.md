@@ -24,4 +24,5 @@ terraform apply \
 -var storage_pool_name="local" \
 -var k8s_master_ip="192.168.1.60" \
 -var subnet_mask="/24" \
+-var pve_node_name="your-node-name"
 ```
