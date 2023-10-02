@@ -129,7 +129,7 @@ resource "proxmox_vm_qemu" "c1-ansible" {
     }
 
     provisioner "local-exec" {
-        command = "scp -qo StrictHostKeyChecking=no -i ${var.private_key_path} ${var.username}@${var.ansible_host_ip}:/home/${var.username}/.ssh"
+        command = "scp -qo StrictHostKeyChecking=no -i ${var.private_key_path} ${var.private_key_path} ${var.username}@${var.ansible_host_ip}:/home/${var.username}/.ssh"
     }
 
     provisioner "local-exec" {

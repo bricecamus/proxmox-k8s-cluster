@@ -4,6 +4,7 @@ terraform {
     # Everything stable with 2.9.11
     proxmox = {
       source = "Telmate/proxmox"
+      version = "2.9.11"	
     }
   }
 }
