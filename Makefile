@@ -4,7 +4,7 @@ edit_variables:
 	sed -i -e 's/{{USERNAME}}/$(USERNAME)/' -e 's/{{PROXMOX_NODE_NAME}}/$(PROXMOX_NODE_NAME)/' -e 's/{{PROXMOX_IP}}/$(PROXMOX_IP)/' ansible/roles/delete-k8s-cluster/tasks/main.yml
 	sed -i -e 's/{{PROXMOX_NODE_NAME}}/$(PROXMOX_NODE_NAME)/' ansible/roles/build-packer-template/tasks/main.yml
 	sed -i -e 's/{{PROXMOX_IP}}/$(PROXMOX_IP)/' packer/ubuntu-22.04-template/sources.pkr.hcl
-	sed -i -e 's/{{USERNAME}}/$(USERNAME)/' scripts/configure-pve.sh
+	sed -i -e 's/{{USERNAME}}/$(USERNAME)/' -e 's/{{USERNAME}}/$(USERNAME)/' scripts/configure-pve.sh
 	
 configure_pve:
 	ansible-playbook ansible/playbooks/configure-pve.yml -i ansible/inventory/inventory.ini
