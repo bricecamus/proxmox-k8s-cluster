@@ -3,7 +3,7 @@
 Generate an ubuntu server cloud-init ready template with Packer, infrastructure deployment with Terraform and Kubernetes cluster configuration with Ansible. 
 
 
-<img src="https://i.imgur.com/qdoxEgF.png" width="90%" height="90%">
+<img src="https://i.imgur.com/SKsU33z.png" width="90%" height="90%">
 
 ## Disclaimer 
 
