@@ -2,9 +2,10 @@ resource "proxmox_vm_qemu" "c1-cp1" {
     name                      = "c1-cp1"
     boot                      = "order=virtio0"
     clone                     = "template-ubuntu-22.04"
+    full_clone	              = true
     target_node               = var.pve_node_name
     scsihw                    = "virtio-scsi-pci"
-    cpu                       = "host"
+    cpu                       = "kvm64"
     agent                     = 1
     sockets                   = 1
     cores                     = 2
@@ -20,13 +21,6 @@ resource "proxmox_vm_qemu" "c1-cp1" {
         model     = "e1000"
         firewall  = false
         link_down = false
-    }
-
-    disk {
-        type      = "virtio"
-        storage   = var.storage_pool_name
-        size      = "100G"
-        iothread  = 0
     }
 }
 
@@ -55,36 +49,29 @@ resource "proxmox_vm_qemu" "c1-workers" {
         link_down = false
     }
 
-    disk {
-        type      = "virtio"
-        storage   = var.storage_pool_name
-        size      = "100G"
-        iothread  = 0 
-    }
-
     depends_on = [ proxmox_vm_qemu.c1-cp1 ]
 }
 
 resource "local_file" "ansible_inventory" {
-    content = templatefile("../ansible/inventory.tftpl",
+    content = templatefile("./templates/inventory.tftpl",
         {
             master_ip = proxmox_vm_qemu.c1-cp1.default_ipv4_address
             worker_ip = proxmox_vm_qemu.c1-workers[*].default_ipv4_address
         }
     )
 
-    filename = "../ansible/inventory"
+    filename = "./templates/inventory"
     depends_on = [ proxmox_vm_qemu.c1-workers, proxmox_vm_qemu.c1-cp1 ]
 }
 
 resource "local_file" "ansible_config" {
-    content = templatefile("../ansible/ansible.cfg.tftpl",
+    content = templatefile("./templates/ansible.cfg.tftpl",
         {
             username = var.username
         }
     )
 
-    filename = "../ansible/ansible.cfg"
+    filename = "./templates/ansible.cfg"
     depends_on = [ proxmox_vm_qemu.c1-workers, proxmox_vm_qemu.c1-cp1 ]
 }
 
@@ -113,13 +100,6 @@ resource "proxmox_vm_qemu" "c1-ansible" {
         link_down = false
     }
 
-    disk {
-        type      = "virtio"
-        storage   = var.storage_pool_name
-        size      = "100G"
-        iothread  = 0
-    }
-
     connection {
         type        = "ssh"
         host        = var.ansible_host_ip
@@ -133,7 +113,7 @@ resource "proxmox_vm_qemu" "c1-ansible" {
     }
 
     provisioner "local-exec" {
-        command = "scp -qo StrictHostKeyChecking=no -i ${var.private_key_path} -r ../ansible ${var.username}@${var.ansible_host_ip}:/home/${var.username}"
+        command = "scp -qo StrictHostKeyChecking=no -i ${var.private_key_path} -r ./templates ${var.username}@${var.ansible_host_ip}:/home/${var.username}"
     }
 
     provisioner "remote-exec" {
@@ -143,8 +123,8 @@ resource "proxmox_vm_qemu" "c1-ansible" {
             "sudo apt update",
             "nohup sudo apt install ansible -y",
             "sudo mkdir /etc/ansible",
-            "sudo cp /home/${var.username}/ansible/ansible.cfg /etc/ansible",
-            "ansible-playbook /home/${var.username}/ansible/playbook.yml -i /home/${var.username}/ansible/inventory",
+            "sudo cp /home/${var.username}/templates/ansible.cfg /etc/ansible",
+            "ansible-playbook /home/${var.username}/templates/playbook.yml -i /home/${var.username}/templates/inventory",
         ]
         on_failure = continue
     }

@@ -1,0 +1,6 @@
+---
+- name: Deploy a Kubernetes cluster on Proxmox 
+  hosts: dedicated-server
+  roles:
+    - ../roles/build-packer-template
+    - ../roles/deploy-k8s-cluster

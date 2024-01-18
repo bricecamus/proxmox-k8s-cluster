@@ -1,16 +1,28 @@
+packer {
+  required_plugins {
+    name = {
+      version = "~> 1"
+      source  = "github.com/hashicorp/proxmox"
+    }
+  }
+}
+
 variable "proxmox_api_url" {
     type    = string
-    default = "" 
+    default = "https://{{PROXMOX_IP}}:8006/api2/json" 
 }
 
 variable "proxmox_api_token_id" {
     type    = string
-    default = ""
 }
 
 variable "proxmox_api_token_secret" {
     type      = string
-    default   = ""
+    sensitive = true
+}
+
+variable "proxmox_node_name" {
+    type      = string
     sensitive = true
 }
 
@@ -18,19 +30,19 @@ source "proxmox-iso" "ubuntu-server-focal" {
     username    = "${var.proxmox_api_token_id}"
     token       = "${var.proxmox_api_token_secret}"
     proxmox_url = "${var.proxmox_api_url}"
-    node        = "proxmox"
+    node        = "${var.proxmox_node_name}"
 
     vm_name          = "template-ubuntu-22.04"
     memory           = "2048" 
     cores            = "1"
     scsi_controller  = "virtio-scsi-pci"
-    iso_file         = "local:iso/ubuntu-22.04.2-live-server-amd64.iso"
+    iso_file         = "local:iso/ubuntu-22.04.3-live-server-amd64.iso"
     iso_storage_pool = "local" 
     qemu_agent       = true
     unmount_iso      = true
     
-    ssh_username         = ""
-    ssh_private_key_file = ""
+    ssh_username         = "packer"
+    ssh_private_key_file = "~/.ssh/id_rsa"
     ssh_timeout          = "20m"
 
     cloud_init               = true
@@ -38,7 +50,7 @@ source "proxmox-iso" "ubuntu-server-focal" {
     insecure_skip_tls_verify = true
     
     boot_wait = "5s"
-    http_directory = "http" 
+    http_directory = "${path.root}/http" 
     
     disks {
         disk_size         = "20G"
@@ -85,7 +97,7 @@ build {
     }
 
     provisioner "file" {
-        source = "files/99-pve.cfg"
+        source = "${path.root}/files/99-pve.cfg"
         destination = "/tmp/99-pve.cfg"
     }
 

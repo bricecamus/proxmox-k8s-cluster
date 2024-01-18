@@ -15,22 +15,6 @@
     - name: Wait for /var/lib/dpkg/lock-frontend to be released 
       shell: while lsof /var/lib/dpkg/lock-frontend ; do sleep 10; done;
 
-    - name: Update APT Cache
-      apt:
-        update_cache: yes
-        force_apt_get: yes
-
-    - name: Remove apt lock file
-      file:
-        state: absent
-        path: "/var/lib/dpkg/lock"
-
-    - name: Upgrade all packages to the latest version
-      apt:
-        name: "*"
-        state: latest
-        force_apt_get: yes
-
     - name: "Kubadm requirements"
       apt:
         name: ['apt-transport-https', 'ca-certificates', 'curl', 'gnupg2', 'software-properties-common']
@@ -117,6 +101,12 @@
     - name: Set join command as fact
       set_fact:
         join_command: "{{ join_command_raw.stdout_lines[0] }}"
+
+    - name: Export KUBECONFIG environment variable permanently
+      lineinfile:
+        path: /root/.bashrc
+        line: 'export KUBECONFIG=/etc/kubernetes/admin.conf'
+        create: yes
 
 - hosts: workers
   become: yes

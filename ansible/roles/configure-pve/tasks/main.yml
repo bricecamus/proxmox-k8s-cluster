@@ -1,0 +1,3 @@
+---
+- name: Copy and execute script to configure NAT on Proxmox 8
+  script: ../../../scripts/configure-pve.sh

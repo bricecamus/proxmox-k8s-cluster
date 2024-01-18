@@ -1,0 +1,5 @@
+---
+- name: Configure Proxmox 8 with NAT network for VMs
+  hosts: dedicated-server
+  roles:
+    - ../roles/configure-pve

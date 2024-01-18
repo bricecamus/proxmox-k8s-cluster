@@ -1,0 +1,77 @@
+---
+- name: Check if Packer template already exists
+  stat:
+    path: "/var/lib/vz/images/100/base-100-disk-0.qcow2"
+  register: packer_template
+
+- name: Download HashiCorp GPG key
+  get_url:
+    url: https://apt.releases.hashicorp.com/gpg
+    dest: /tmp/hashicorp-gpg
+  when: not packer_template.stat.exists
+  
+- name: Import and save GPG key
+  shell: |
+    gpg --dearmor < /tmp/hashicorp-gpg | sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
+  args:
+    executable: /bin/bash
+  when: not packer_template.stat.exists
+
+- name: Clean up temporary GPG file
+  file:
+    path: /tmp/hashicorp-gpg
+    state: absent
+  when: not packer_template.stat.exists
+
+- name: Add Hashicorp deb to source list
+  apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main"
+    state: present
+    filename: hashicorp
+    update_cache: yes
+  when: not packer_template.stat.exists
+
+- name: Update package 
+  apt:
+    update_cache: yes
+  when: not packer_template.stat.exists
+
+- name: Install packer
+  apt:
+    name: packer
+    state: present
+  when: not packer_template.stat.exists
+    
+- name: Transfer packer folder to Proxmox server
+  copy:
+    src: ../../../../packer/ubuntu-22.04-template 
+    dest: /tmp/
+  when: not packer_template.stat.exists
+    
+- name: Read SSH public key
+  slurp:
+    src: "{{ ansible_env.HOME }}/.ssh/id_rsa.pub"
+  register: ssh_key_contents
+  when: not packer_template.stat.exists
+
+- name: Fill public key field in cloud-init user-data file
+  command: "sed -i '11s|.*|    - {{ ssh_key_contents.content | b64decode | replace('\n', '') }}|' /tmp/ubuntu-22.04-template/http/user-data"
+  when: not packer_template.stat.exists
+    
+- name: Download ubuntu-server iso
+  get_url:
+    url: https://releases.ubuntu.com/22.04.3/ubuntu-22.04.3-live-server-amd64.iso
+    dest: /var/lib/vz/template/iso/
+  when: not packer_template.stat.exists
+    
+- name: Inform user to wait for Packer template build
+  debug:
+    msg: "Please wait for the following Packer template build to complete. This may take around 10 minutes."    
+      
+- name: Install packer template file plugins
+  command: "packer init /tmp/ubuntu-22.04-template/sources.pkr.hcl"
+  when: not packer_template.stat.exists
+  
+- name: Build packer template file (This may take around 10 minutes.)
+  command: "packer build -var proxmox_api_token_id=$PM_API_TOKEN_ID -var proxmox_api_token_secret=$PM_API_TOKEN_SECRET -var proxmox_node_name={{PROXMOX_NODE_NAME}} /tmp/ubuntu-22.04-template/sources.pkr.hcl"
+  when: not packer_template.stat.exists

@@ -2,12 +2,13 @@
 autoinstall:
   version: 1
   identity:
-    hostname: ""
-    password: ""
-    username: ""
+    hostname: "ubuntu-template"
+    username: "packer"
+    password: "packer"
   ssh:
     install-server: true
-    authorized-keys: [""]
+    authorized-keys:
+    - "this-will-be-replaced-by-ansible"
     allow-pw: false
     disable_root: true
     ssh_quiet_keygen: true
@@ -19,9 +20,9 @@ autoinstall:
     package_upgrade: false
     timezone: America/Montreal
     users:
-      - name: ""
+      - name: "packer"
         groups: [adm, sudo]
         lock-passwd: false
         sudo: ALL=(ALL) NOPASSWD:ALL
         shell: /bin/bash
-        passwd: ""
+        passwd: "packer"

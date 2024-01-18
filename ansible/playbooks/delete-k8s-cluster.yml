@@ -1,0 +1,5 @@
+---
+- name: Delete the deployed Kubernetes cluster
+  hosts: dedicated-server
+  roles:
+    - ../roles/delete-k8s-cluster
