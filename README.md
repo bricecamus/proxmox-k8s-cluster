@@ -11,7 +11,7 @@ Use this repository to deploy a k8s cluster to get a TEST environnement, do not 
 
 ## Usage example
 
-Use the makefile to edit the variable with your desired username (used for proxmox API user and cloud-init for control-pane and nodes), desired password, the path of your ssh private key (or edit the ansible inventory file if you want to use ssh with a password), your proxmox ip and name.
+Use the makefile to edit the variable with your desired username (used for proxmox API user and cloud-init for control-plane and nodes), desired password, the path of your ssh private key (or edit the ansible inventory file if you want to use ssh with a password), your proxmox ip and name.
 
 You can also configure your proxmox environnement as I tested it, with a NAT setup, pre-configured DHCP server, API user for terraform, etc..
 
@@ -33,4 +33,13 @@ make create_cluster
 Delete the cluster :
 ```
 make delete_cluster
+```
+
+Valide the deployment with kubectl as root on control-plane 1 :
+```
+root@c1-cp1:/home/ghoxt# kubectl get nodes
+NAME       STATUS   ROLES           AGE   VERSION
+c1-cp1     Ready    control-plane   18m   v1.28.2
+c1-node1   Ready    <none>          17m   v1.28.2
+c1-node2   Ready    <none>          17m   v1.28.2
 ```
