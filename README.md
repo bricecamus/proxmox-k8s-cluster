@@ -30,11 +30,6 @@ Build packer image, deploy K8S cluster with terraform and ansible :
 make create_cluster
 ```
 
-Delete the cluster :
-```
-make delete_cluster
-```
-
 Valide the deployment with kubectl as root on control-plane 1 :
 ```
 root@c1-cp1:/home/ghoxt# kubectl get nodes
@@ -42,4 +37,9 @@ NAME       STATUS   ROLES           AGE   VERSION
 c1-cp1     Ready    control-plane   18m   v1.28.2
 c1-node1   Ready    <none>          17m   v1.28.2
 c1-node2   Ready    <none>          17m   v1.28.2
+```
+
+Delete the cluster :
+```
+make delete_cluster
 ```
