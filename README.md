@@ -30,7 +30,7 @@ Build packer image, deploy K8S cluster with terraform and ansible :
 make create_cluster
 ```
 
-Valide the deployment with kubectl as root on control-plane 1 :
+Validate the deployment with kubectl as root on control-plane 1 :
 ```
 root@c1-cp1:/home/ghoxt# kubectl get nodes
 NAME       STATUS   ROLES           AGE   VERSION
